@@ -38,6 +38,7 @@ final class ProfileViewController: UIViewController {
     private let bioLabel: UILabel = {
         let label = UILabel()
         label.text = "Hello, world!"
+        label.numberOfLines = 0
         label.font = UIFont.systemFont(ofSize: 13)
         label.textColor = .ypWhite
         label.translatesAutoresizingMaskIntoConstraints = false

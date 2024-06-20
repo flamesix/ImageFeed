@@ -26,6 +26,7 @@ final class ImagesListViewController: UIViewController {
     private func configureUI() {
         view.backgroundColor = .ypBlack
         view.addSubview(tableView)
+        navigationController?.navigationBar.isHidden = true
         tableView.frame = view.bounds
         tableView.delegate = self
         tableView.dataSource = self

@@ -9,6 +9,16 @@ import UIKit
 
 final class SingleImageViewController: UIViewController {
     
+    var image: UIImage? {
+        didSet {
+            guard isViewLoaded, let image else { return }
+            
+            profileImage.image = image
+            profileImage.frame.size = image.size
+            rescaleAndCenterImageInScrollView(image: image)
+        }
+    }
+    
     private let profileImage: UIImageView = {
         let image = UIImageView()
         image.contentMode = .scaleAspectFit
@@ -38,16 +48,6 @@ final class SingleImageViewController: UIViewController {
         scroll.translatesAutoresizingMaskIntoConstraints = false
         return scroll
     }()
-    
-    var image: UIImage? {
-        didSet {
-            guard isViewLoaded, let image else { return }
-            
-            profileImage.image = image
-            profileImage.frame.size = image.size
-            rescaleAndCenterImageInScrollView(image: image)
-        }
-    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
