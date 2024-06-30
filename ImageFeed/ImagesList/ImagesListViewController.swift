@@ -23,10 +23,14 @@ final class ImagesListViewController: UIViewController {
         configureUI()
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        navigationController?.navigationBar.isHidden = true
+        tabBarController?.navigationItem.hidesBackButton = true
+    }
+    
     private func configureUI() {
         view.backgroundColor = .ypBlack
         view.addSubview(tableView)
-        navigationController?.navigationBar.isHidden = true
         tableView.frame = view.bounds
         tableView.delegate = self
         tableView.dataSource = self

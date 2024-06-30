@@ -55,6 +55,7 @@ final class ImagesListCell: UITableViewCell {
     
     private func configureUI() {
         backgroundColor = .clear
+        selectionStyle = .none
         
         addSubview(imageFeed)
         imageFeed.addSubview(likeButton)
