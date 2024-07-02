@@ -24,21 +24,29 @@ final class OAuth2Service {
         
         let url = urlComponents?.url
         
-        guard let url else { return }
+        guard let url else {
+            print("Function: \(#function), line \(#line) Failed to get URL")
+            return
+        }
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
         
         let task = URLSession.shared.data(for: request) { result in
             switch result {
             case .success(let data):
                 do {
-                    let token = try JSONDecoder().decode(OAuthTokenResponseBody.self, from: data)
+                    let token = try decoder.decode(OAuthTokenResponseBody.self, from: data)
                     completion(.success(token.accessToken))
                 } catch {
+                    print("Function: \(#function), line \(#line) Failed to Decode OAuthTokenResponseBody")
                     print(error.localizedDescription)
                 }
             case .failure(let error):
+                print("Function: \(#function), line \(#line) Error: \(error.localizedDescription)")
                 completion(.failure(error))
             }
         }

@@ -60,6 +60,7 @@ final class WebViewViewController: UIViewController {
         ]
         
         guard let url = urlComponents.url else {
+            print("Function: \(#function), line \(#line) Failed to get URL")
             return
         }
         

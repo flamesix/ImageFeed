@@ -27,7 +27,7 @@ final class SplashViewController: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        if let _ = storage.token {
+        if storage.token != nil {
             switchToTabBarController()
         } else {
             switchToAuthViewController()
@@ -79,6 +79,7 @@ extension SplashViewController: AuthViewControllerDelegate {
                 self?.switchToTabBarController()
                 self?.storage.token = token
             case .failure(let error):
+                print("Function: \(#function), line \(#line) Error: (\(error.localizedDescription)")
                 print(error.localizedDescription)
             }
         }
