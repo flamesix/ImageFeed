@@ -18,6 +18,8 @@ final class SplashViewController: UIViewController {
     
     private let storage = OAuth2TokenStorage()
     private let oauth2Service = OAuth2Service.shared
+    private let profileService = ProfileService.shared
+    private let profileImageService = ProfileImageService.shared
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -67,20 +69,48 @@ final class SplashViewController: UIViewController {
 
 extension SplashViewController: AuthViewControllerDelegate {
     func authViewController(_ vc: AuthViewController, didAuthenticateWithCode code: String) {
-        dismiss(animated: true) { [weak self] in
-            self?.fetchOAuthToken(code)
-        }
+            fetchOAuthToken(code, vc)
     }
     
-    private func fetchOAuthToken(_ code: String) {
+    private func fetchOAuthToken(_ code: String, _ vc: AuthViewController) {
         oauth2Service.fetchOAuthToken(code: code) { [weak self] result in
             switch result {
             case .success(let token):
-                self?.switchToTabBarController()
                 self?.storage.token = token
+                self?.fetchProfile(token)
             case .failure(let error):
                 print("Function: \(#function), line \(#line) Error: (\(error.localizedDescription)")
                 print(error.localizedDescription)
+                
+                let alert = UIAlertController(title: "Что-то пошло не так", message: "Не удалось войти в систему", preferredStyle: .alert)
+                let action = UIAlertAction(title: "OK", style: .cancel)
+                alert.addAction(action)
+                vc.present(alert, animated: true)
+            }
+        }
+    }
+    
+    private func fetchProfile(_ token: String) {
+        UIBlockingProgressHUD.show()
+        
+        profileService.fetchProfile(token) { [weak self] result in
+            UIBlockingProgressHUD.dismiss()
+            
+            switch result {
+            case .success(let profile):
+                self?.profileService.profile = profile
+                self?.profileImageService.fetchProfileImageURL(username: profile.username, { result in
+                    switch result {
+                    case .success(let imageURL):
+                        print("IMAGE URL: \(imageURL)")
+                    case .failure(let error):
+                        print("Function: \(#function), line \(#line) Unable to fetch ProfileImageURL \(error.localizedDescription)")
+                    }
+                })
+                self?.switchToTabBarController()
+            case .failure(let error):
+                print("Function: \(#function), line \(#line) Unable to fetch Profile \(error.localizedDescription)")
+                break
             }
         }
     }

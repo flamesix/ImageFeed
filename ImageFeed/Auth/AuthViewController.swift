@@ -35,7 +35,6 @@ final class AuthViewController: UIViewController {
         return button
     }()
     
-    private let oauth2Service = OAuth2Service.shared
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -83,6 +82,7 @@ final class AuthViewController: UIViewController {
 
 extension AuthViewController: WebViewViewControllerDelegate {
     func webViewViewController(_ vc: WebViewViewController, didAuthenticateWithCode code: String) {
+        vc.navigationController?.popViewController(animated: true)
         delegate?.authViewController(self, didAuthenticateWithCode: code)
     }
     
