@@ -68,7 +68,7 @@ final class WebViewViewController: UIViewController {
     }
     
     private func updateProgress() {
-        progressBar.progress = Float(webView.estimatedProgress)
+        progressBar.setProgress(Float(webView.estimatedProgress), animated: true)
         progressBar.isHidden = fabs(webView.estimatedProgress - 1.0) <= 0.0001
     }
     

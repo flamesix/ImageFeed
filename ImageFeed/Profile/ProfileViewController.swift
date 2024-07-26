@@ -13,6 +13,8 @@ final class ProfileViewController: UIViewController {
     private let profileImage: UIImageView = {
         let image = UIImageView()
         image.contentMode = .scaleAspectFit
+        image.layer.cornerRadius = 35
+        image.clipsToBounds = true
         image.image = UIImage(named: "profileImage")
         image.translatesAutoresizingMaskIntoConstraints = false
         return image
