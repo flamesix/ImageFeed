@@ -7,12 +7,59 @@
 
 import Foundation
 
+enum AuthServiceError: Error {
+    case invalidRequest
+}
+
 final class OAuth2Service {
     static let shared = OAuth2Service()
+    
+    private let urlSession = URLSession.shared
+    
+    private var task: URLSessionTask?
+    private var lastCode: String?
     
     private init () { }
     
     func fetchOAuthToken(code: String, completion: @escaping (Result<String, Error>) -> Void) {
+        
+        UIBlockingProgressHUD.show()
+        
+        assert(Thread.isMainThread)
+        guard lastCode != code else {
+            completion(.failure(AuthServiceError.invalidRequest))
+            return
+        }
+        
+        task?.cancel()
+        lastCode = code
+        
+        guard let request = makeOAuthTokenRequest(code: code) else {
+            completion(.failure(AuthServiceError.invalidRequest))
+            return
+        }
+        
+        let task = urlSession.objectTask(for: request) { [weak self] (result: Result<OAuthTokenResponseBody, any Error>) in
+            switch result {
+            case .success(let token):
+                UIBlockingProgressHUD.dismiss()
+                completion(.success(token.accessToken))
+                
+                self?.task = nil
+                self?.lastCode = nil
+            case .failure(let error):
+                UIBlockingProgressHUD.dismiss()
+                print("Function: \(#function), line \(#line) Failed to Decode OAuthTokenResponseBody")
+                print(error.localizedDescription)
+                completion(.failure(error))
+            }
+        }
+        self.task = task
+        task.resume()
+    }
+    
+    private func makeOAuthTokenRequest(code: String) -> URLRequest? {
+        
         var urlComponents = URLComponents(string: Constants.tokenURL)
         urlComponents?.queryItems = [
             URLQueryItem(name: "client_id", value: Constants.accessKey),
@@ -26,30 +73,11 @@ final class OAuth2Service {
         
         guard let url else {
             print("Function: \(#function), line \(#line) Failed to get URL")
-            return
+            return nil
         }
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-        
-        let task = URLSession.shared.data(for: request) { result in
-            switch result {
-            case .success(let data):
-                do {
-                    let token = try decoder.decode(OAuthTokenResponseBody.self, from: data)
-                    completion(.success(token.accessToken))
-                } catch {
-                    print("Function: \(#function), line \(#line) Failed to Decode OAuthTokenResponseBody")
-                    print(error.localizedDescription)
-                }
-            case .failure(let error):
-                print("Function: \(#function), line \(#line) Error: \(error.localizedDescription)")
-                completion(.failure(error))
-            }
-        }
-        task.resume()
+        return request
     }
 }

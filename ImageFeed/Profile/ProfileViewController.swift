@@ -6,12 +6,15 @@
 //
 
 import UIKit
+import Kingfisher
 
 final class ProfileViewController: UIViewController {
     
     private let profileImage: UIImageView = {
         let image = UIImageView()
         image.contentMode = .scaleAspectFit
+        image.layer.cornerRadius = 35
+        image.clipsToBounds = true
         image.image = UIImage(named: "profileImage")
         image.translatesAutoresizingMaskIntoConstraints = false
         return image
@@ -51,15 +54,46 @@ final class ProfileViewController: UIViewController {
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
-
+    
+    private let profileService = ProfileService.shared
+    private var profileImageServiceObserver: NSObjectProtocol?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         configureUI()
+        updateProfileDetails(profile: profileService.profile)
         
+        profileImageServiceObserver = NotificationCenter.default
+            .addObserver(
+                forName: ProfileImageService.didChangeNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                guard let self = self else { return }
+                self.updateAvatar()
+            }
+        updateAvatar()
+    }
+    
+    private func updateAvatar() {
+        guard let profileImageURL = ProfileImageService.shared.avatarURL,
+              let url = URL(string: profileImageURL) else { return }
+        let processor = RoundCornerImageProcessor(cornerRadius: 35)
+        profileImage.kf.setImage(with: url,
+                              placeholder: UIImage(named: "placeholder.jpeg"),
+                              options: [.processor(processor)])
+    }
+    
+    private func updateProfileDetails(profile: Profile?) {
+        guard let profile else { return }
+        nameLabel.text = profile.name
+        bioLabel.text = profile.bio
+        loginLabel.text = profile.loginName
     }
     
     @objc private func didTapLogoffButton() {
         print("didTapLogoffButton")
+        OAuth2TokenStorage().removeToken()
     }
     
     private func configureUI() {
@@ -91,7 +125,7 @@ final class ProfileViewController: UIViewController {
             bioLabel.topAnchor.constraint(equalTo: loginLabel.bottomAnchor, constant: 8),
             bioLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             bioLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-
+            
         ])
     }
 }
