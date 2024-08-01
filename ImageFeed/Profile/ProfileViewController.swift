@@ -92,8 +92,9 @@ final class ProfileViewController: UIViewController {
     }
     
     @objc private func didTapLogoffButton() {
-        print("didTapLogoffButton")
-        OAuth2TokenStorage().removeToken()
+        ProfileLogoutService.shared.logout()
+        let vc = SplashViewController()
+        navigationController?.pushViewController(vc, animated: true)
     }
     
     private func configureUI() {

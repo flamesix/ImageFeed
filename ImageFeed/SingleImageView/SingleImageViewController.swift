@@ -9,15 +9,7 @@ import UIKit
 
 final class SingleImageViewController: UIViewController {
     
-    var image: UIImage? {
-        didSet {
-            guard isViewLoaded, let image else { return }
-            
-            profileImage.image = image
-            profileImage.frame.size = image.size
-            rescaleAndCenterImageInScrollView(image: image)
-        }
-    }
+    var image: URL?
     
     private let profileImage: UIImageView = {
         let image = UIImageView()
@@ -52,11 +44,7 @@ final class SingleImageViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         configureUI()
-        
-        guard let image else { return }
-        profileImage.image = image
-        profileImage.frame.size = image.size
-        rescaleAndCenterImageInScrollView(image: image)
+        loadAndShowPhoto(url: image)
     }
     
     @objc private func didTapBackButton() {
@@ -70,6 +58,26 @@ final class SingleImageViewController: UIViewController {
             applicationActivities: nil
         )
         present(share, animated: true, completion: nil)
+    }
+    
+    private func loadAndShowPhoto(url: URL?) {
+        guard let url else { return }
+        
+        UIBlockingProgressHUD.show()
+        
+        profileImage.kf.setImage(with: url) { [weak self] result in
+            
+            UIBlockingProgressHUD.dismiss()
+            guard let self else { return }
+            
+            switch result {
+            case .success(let imageResult):
+                self.rescaleAndCenterImageInScrollView(image: imageResult.image)
+            case .failure(let error):
+                print(error.localizedDescription)
+                self.showError(url: url)
+            }
+        }
     }
     
     private func configureUI() {
@@ -127,5 +135,23 @@ extension SingleImageViewController: UIScrollViewDelegate {
         let y = (newContentSize.height - visibleRectSize.height) / 2
         
         scrollView.setContentOffset(CGPoint(x: x, y: y), animated: false)
+    }
+}
+
+extension SingleImageViewController {
+    private func showError(url: URL) {
+        let alert = UIAlertController(title: "Что-то пошло не так.", message: "Попробовать ещё раз?", preferredStyle: .alert)
+        let repeats = UIAlertAction(title: "Повторить", style: .default) { [weak self] _ in
+            guard let self else { return }
+            self.loadAndShowPhoto(url: url)
+        }
+        let cancel = UIAlertAction(title: "Не надо", style: .cancel) { _ in
+            alert.dismiss(animated: true)
+        }
+        
+        alert.addAction(cancel)
+        alert.addAction(repeats)
+        
+        present(alert, animated: true)
     }
 }
