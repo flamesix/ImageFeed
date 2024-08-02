@@ -14,7 +14,7 @@ struct Photo {
     let welcomeDescription: String?
     let thumbImageURL: String
     let largeImageURL: String
-    let isLiked: Bool
+    var isLiked: Bool
     
     init(_ photoResult: PhotoResult, date: ISO8601DateFormatter) {
         self.id = photoResult.id
@@ -60,7 +60,7 @@ final class ImagesListService {
     private var currentTask: URLSessionTask?
     
     private let urlSession = URLSession.shared
-    private let dateFormatter = ISO8601DateFormatter()
+    private static let dateFormatter = ISO8601DateFormatter()
     
     private init() { }
     
@@ -69,7 +69,7 @@ final class ImagesListService {
         
         guard currentTask == nil else { return }
         
-        let nextPage = lastLoadedPage == nil ? 1 : lastLoadedPage! + 1
+        let nextPage = (lastLoadedPage ?? 0) + 1
         
         guard let request = makeRequest(page: nextPage) else {
             print("Function: \(#function), line \(#line) Failed to get Request")
@@ -86,13 +86,14 @@ final class ImagesListService {
                         self.lastLoadedPage! += 1
                     }
                     
-                    let newPhotos = photoResults.map { Photo($0, date: self.dateFormatter) }
+                    let newPhotos = photoResults.map { Photo($0, date: ImagesListService.dateFormatter) }
                     self.photos.append(contentsOf: newPhotos)
                     
                     NotificationCenter.default.post(name: ImagesListService.didChangeNotification,
                                                     object: nil)
                     
                 case .failure(let error):
+                    print("Function: \(#function), line \(#line) Failed to get PhotoResults")
                     print(error.localizedDescription)
                 }
             }
@@ -103,6 +104,8 @@ final class ImagesListService {
     }
     
     func changeLike(photoId: String, isLike: Bool, _ completion: @escaping (Result<Void, Error>) -> Void) {
+        assert(Thread.isMainThread)
+        
         if currentTask != nil {
             currentTask?.cancel()
         }
@@ -112,31 +115,21 @@ final class ImagesListService {
             return
         }
         
-        let task = urlSession.objectTask(for: request) { (result: Result<PhotoLike, Error>) in
+        let task = urlSession.objectTask(for: request) { [weak self] (result: Result<PhotoLike, Error>) in
+            guard let self else { return }
             DispatchQueue.main.async {
                 switch result {
-                case .success:
+                case .success(let photoLike):
                     if let index = self.photos.firstIndex(where: { $0.id == photoId }) {
-                        let photo = self.photos[index]
-                        let newPhotoResult = PhotoResult(id: photo.id,
-                                                         width: photo.size.width,
-                                                         height: photo.size.height,
-                                                         createdAt: photo.createdAt?.description,
-                                                         description: photo.welcomeDescription,
-                                                         likedByUser: !photo.isLiked,
-                                                         urls: UrlsResult(full: photo.largeImageURL,
-                                                                          thumb: photo.thumbImageURL)
-                                                         )
-                        let newPhoto = Photo(newPhotoResult, date: self.dateFormatter)
-                        self.photos[index] = newPhoto
+                        self.photos[index].isLiked.toggle()
                         completion(.success(()))
                     }
-                    
                 case .failure(let error):
                     print("Function: \(#function), line \(#line) Failed to makeLikeRequest")
                     fatalError("error like: \(error)")
                 }
             }
+            self.currentTask = nil
         }
         self.currentTask = task
         task.resume()

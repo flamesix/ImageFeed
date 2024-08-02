@@ -42,7 +42,7 @@ final class ImagesListCell: UITableViewCell {
         return label
     }()
     
-    private lazy var dateFormatter: DateFormatter = {
+    private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .long
         formatter.timeStyle = .none
@@ -125,7 +125,7 @@ final class ImagesListCell: UITableViewCell {
                 self?.imageFeed.image = UIImage(named: "ImagePlaceholder")
             }
         }
-        dateLabel.text = dateFormatter.string(from: photo.createdAt ?? Date())
+        dateLabel.text = ImagesListCell.dateFormatter.string(from: photo.createdAt ?? Date())
         setIsLiked(isLiked: photo.isLiked)
     }
 }
