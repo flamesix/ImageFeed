@@ -57,6 +57,7 @@ final class SplashViewController: UIViewController {
     }
     
     private func configureUI() {
+        navigationController?.setNavigationBarHidden(true, animated: false)
         view.backgroundColor = .ypBlack
         view.addSubview(logoImage)
         

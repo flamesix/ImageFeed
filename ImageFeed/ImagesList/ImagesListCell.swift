@@ -6,10 +6,17 @@
 //
 
 import UIKit
+import Kingfisher
+
+protocol ImagesListCellDelegate: AnyObject {
+    func imageListCellDidTapLike(_ cell: ImagesListCell)
+}
 
 final class ImagesListCell: UITableViewCell {
     
     static let reuseIdentifier = "ImagesListCell"
+    
+    weak var delegate: ImagesListCellDelegate? 
     
     private let imageFeed: UIImageView = {
         let imageView = UIImageView()
@@ -23,7 +30,6 @@ final class ImagesListCell: UITableViewCell {
     
     private let likeButton: UIButton = {
         let button = UIButton()
-        button.setImage(UIImage(named: Constants.likeInactive), for: .normal)
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
@@ -36,12 +42,21 @@ final class ImagesListCell: UITableViewCell {
         return label
     }()
     
-    private lazy var dateFormatter: DateFormatter = {
+    private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .long
         formatter.timeStyle = .none
         return formatter
     }()
+    
+    static func clean() {
+        let cache = ImageCache.default
+        cache.clearMemoryCache()
+        cache.clearDiskCache()
+        cache.backgroundCleanExpiredDiskCache()
+        cache.cleanExpiredMemoryCache()
+        cache.clearCache()
+    }
     
     
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
@@ -49,8 +64,22 @@ final class ImagesListCell: UITableViewCell {
         configureUI()
     }
     
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        imageFeed.kf.cancelDownloadTask()
+    }
+    
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    @objc private func likeButtonTapped() {
+        delegate?.imageListCellDidTapLike(self)
+    }
+    
+    func setIsLiked(isLiked: Bool) {
+        let likeImage = isLiked ? UIImage(named: Constants.likeActive) : UIImage(named: Constants.likeInactive)
+        likeButton.setImage(likeImage, for: .normal)
     }
     
     private func configureUI() {
@@ -58,8 +87,10 @@ final class ImagesListCell: UITableViewCell {
         selectionStyle = .none
         
         addSubview(imageFeed)
-        imageFeed.addSubview(likeButton)
+        contentView.addSubview(likeButton)
         imageFeed.addSubview(dateLabel)
+        
+        likeButton.addTarget(self, action: #selector(likeButtonTapped), for: .touchUpInside)
         
         let padding: CGFloat = 16
         
@@ -82,9 +113,19 @@ final class ImagesListCell: UITableViewCell {
         ])
     }
     
-    public func setCell(photoName: String, indexPath: IndexPath) {
-        imageFeed.image = UIImage(named: photoName)
-        dateLabel.text = dateFormatter.string(from: Date())
-        likeButton.setImage(UIImage(named: indexPath.row % 2 == 0 ? Constants.likeInactive : Constants.likeActive), for: .normal)
+    public func setCell(photo: Photo) {
+        let url = URL(string: photo.thumbImageURL)
+        imageFeed.kf.indicatorType = .activity
+        imageFeed.kf.setImage(with: url, placeholder: UIImage(named: "ImagePlaceholder")) { [weak self] result in
+            switch result {
+            case .success(let image):
+                self?.imageFeed.image = image.image
+            case .failure(let error):
+                print("Function: \(#function), line \(#line) Failed to Download Image \(error.localizedDescription)")
+                self?.imageFeed.image = UIImage(named: "ImagePlaceholder")
+            }
+        }
+        dateLabel.text = ImagesListCell.dateFormatter.string(from: photo.createdAt ?? Date())
+        setIsLiked(isLiked: photo.isLiked)
     }
 }

@@ -80,8 +80,8 @@ final class ProfileViewController: UIViewController {
               let url = URL(string: profileImageURL) else { return }
         let processor = RoundCornerImageProcessor(cornerRadius: 35)
         profileImage.kf.setImage(with: url,
-                              placeholder: UIImage(named: "placeholder.jpeg"),
-                              options: [.processor(processor)])
+                                 placeholder: UIImage(named: "placeholder.jpeg"),
+                                 options: [.processor(processor)])
     }
     
     private func updateProfileDetails(profile: Profile?) {
@@ -92,8 +92,18 @@ final class ProfileViewController: UIViewController {
     }
     
     @objc private func didTapLogoffButton() {
-        print("didTapLogoffButton")
-        OAuth2TokenStorage().removeToken()
+        let alertController = UIAlertController(title: "Пока, пока!", message: "Уверены что хотите выйти?", preferredStyle: .alert)
+        let alertYes = UIAlertAction(title: "Да", style: .default) { [weak self] _ in
+            ProfileLogoutService.shared.logout()
+            let vc = SplashViewController()
+            self?.navigationController?.pushViewController(vc, animated: true)
+        }
+        
+        let alertNo = UIAlertAction(title: "Нет", style: .default)
+        [alertYes, alertNo].forEach { alertController.addAction($0) }
+        
+        present(alertController, animated: true)
+        
     }
     
     private func configureUI() {
