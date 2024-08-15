@@ -6,11 +6,18 @@
 //
 
 import UIKit
-import Kingfisher
 
-final class ProfileViewController: UIViewController {
+protocol ProfileViewControllerProtocol: AnyObject {
+    var presenter: ProfileViewPresenterProtocol? { get set }
+    var profileImage: UIImageView { get }
+    var nameLabel: UILabel { get }
+    var bioLabel: UILabel { get }
+    var loginLabel: UILabel { get }
+}
+
+final class ProfileViewController: UIViewController, ProfileViewControllerProtocol {
     
-    private let profileImage: UIImageView = {
+    let profileImage: UIImageView = {
         let image = UIImageView()
         image.contentMode = .scaleAspectFit
         image.layer.cornerRadius = 35
@@ -20,7 +27,7 @@ final class ProfileViewController: UIViewController {
         return image
     }()
     
-    private let nameLabel: UILabel = {
+    let nameLabel: UILabel = {
         let label = UILabel()
         label.text = "Екатерина Новикова"
         label.font = UIFont.systemFont(ofSize: 23, weight: .semibold)
@@ -29,7 +36,7 @@ final class ProfileViewController: UIViewController {
         return label
     }()
     
-    private let loginLabel: UILabel = {
+    let loginLabel: UILabel = {
         let label = UILabel()
         label.text = "@ekaterina_nov"
         label.font = UIFont.systemFont(ofSize: 13)
@@ -38,7 +45,7 @@ final class ProfileViewController: UIViewController {
         return label
     }()
     
-    private let bioLabel: UILabel = {
+    let bioLabel: UILabel = {
         let label = UILabel()
         label.text = "Hello, world!"
         label.numberOfLines = 0
@@ -50,51 +57,25 @@ final class ProfileViewController: UIViewController {
     
     private let logoffButton: UIButton = {
         let button = UIButton()
+        button.accessibilityIdentifier = "logoffButton"
         button.setImage(UIImage(named: "logoffButton"), for: .normal)
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
     
-    private let profileService = ProfileService.shared
-    private var profileImageServiceObserver: NSObjectProtocol?
+    var presenter: ProfileViewPresenterProtocol?
     
     override func viewDidLoad() {
         super.viewDidLoad()
         configureUI()
-        updateProfileDetails(profile: profileService.profile)
-        
-        profileImageServiceObserver = NotificationCenter.default
-            .addObserver(
-                forName: ProfileImageService.didChangeNotification,
-                object: nil,
-                queue: .main
-            ) { [weak self] _ in
-                guard let self = self else { return }
-                self.updateAvatar()
-            }
-        updateAvatar()
-    }
-    
-    private func updateAvatar() {
-        guard let profileImageURL = ProfileImageService.shared.avatarURL,
-              let url = URL(string: profileImageURL) else { return }
-        let processor = RoundCornerImageProcessor(cornerRadius: 35)
-        profileImage.kf.setImage(with: url,
-                                 placeholder: UIImage(named: "placeholder.jpeg"),
-                                 options: [.processor(processor)])
-    }
-    
-    private func updateProfileDetails(profile: Profile?) {
-        guard let profile else { return }
-        nameLabel.text = profile.name
-        bioLabel.text = profile.bio
-        loginLabel.text = profile.loginName
+        presenter?.updateProfileDetails()
+        presenter?.observe(placeholder: UIImage(named: "placeholder.jpeg") ?? UIImage())
     }
     
     @objc private func didTapLogoffButton() {
         let alertController = UIAlertController(title: "Пока, пока!", message: "Уверены что хотите выйти?", preferredStyle: .alert)
         let alertYes = UIAlertAction(title: "Да", style: .default) { [weak self] _ in
-            ProfileLogoutService.shared.logout()
+            self?.presenter?.didTapLogoffButton()
             let vc = SplashViewController()
             self?.navigationController?.pushViewController(vc, animated: true)
         }
@@ -107,6 +88,8 @@ final class ProfileViewController: UIViewController {
     }
     
     private func configureUI() {
+        presenter?.view = self
+        
         view.backgroundColor = .ypBlack
         view.addSubviews(profileImage, nameLabel, loginLabel, bioLabel, logoffButton)
         

@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct Photo {
+public struct Photo {
     let id: String
     let size: CGSize
     let createdAt: Date?
@@ -119,7 +119,7 @@ final class ImagesListService {
             guard let self else { return }
             DispatchQueue.main.async {
                 switch result {
-                case .success(let photoLike):
+                case .success(_):
                     if let index = self.photos.firstIndex(where: { $0.id == photoId }) {
                         self.photos[index].isLiked.toggle()
                         completion(.success(()))
