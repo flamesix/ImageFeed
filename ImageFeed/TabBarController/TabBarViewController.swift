@@ -20,7 +20,11 @@ final class TabBarViewController: UITabBarController {
         tabBar.tintColor = .ypWhite
         
         let imagesListVC = ImagesListViewController()
+        let imagesListPresenter = ImagesListPresenter()
+        imagesListVC.presenter = imagesListPresenter
         let profileVC = ProfileViewController()
+        let profileViewPresenter = ProfileViewPresenter()
+        profileVC.presenter = profileViewPresenter
         
         let imagesListNVC = UINavigationController(rootViewController: imagesListVC)
         

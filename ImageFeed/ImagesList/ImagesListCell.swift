@@ -30,6 +30,7 @@ final class ImagesListCell: UITableViewCell {
     
     private let likeButton: UIButton = {
         let button = UIButton()
+        button.accessibilityIdentifier = "LikeButton"
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
@@ -64,7 +65,7 @@ final class ImagesListCell: UITableViewCell {
         configureUI()
     }
     
-    override func prepareForReuse() {
+   override func prepareForReuse() {
         super.prepareForReuse()
         imageFeed.kf.cancelDownloadTask()
     }

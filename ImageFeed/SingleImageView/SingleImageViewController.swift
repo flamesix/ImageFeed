@@ -20,6 +20,7 @@ final class SingleImageViewController: UIViewController {
     
     private let backButton: UIButton = {
         let button = UIButton()
+        button.accessibilityIdentifier = "backButton"
         button.setImage(UIImage(named: "chevron.backward"), for: .normal)
         button.tintColor = .ypWhite
         button.translatesAutoresizingMaskIntoConstraints = false
